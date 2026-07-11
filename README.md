@@ -13,6 +13,18 @@ In this interactive fiction experience, you navigate a quiet house consisting of
 ### Prerequisites
 All you need is Python 3 installed on your computer. The game uses only built-in standard libraries (`time`, `sys`), so no external dependencies or virtual environments are required.
 
+##Commands
+Once the game starts, you can use the following commands to interact with the house:
+go [room] - Move to a different area (e.g., go kitchen).
+look - Read the description of your current room again.
+look [object] - Inspect an item. Do this multiple times to see how things change (e.g., look mug).
+quit - Exit the game.
+
+##Fast mmode (skip animations)
+If you want to replay the game without the slow-typing text effect, you can run it in fast mode by setting an environment variable:
+Mac/Linux: FAST=1 python game.py
+Windows (PowerShell): $env:FAST="1"; python game.py
+
 Running the Game
 1. Save the code into a file named `memory_house.py`.
 2. Open your terminal or command prompt.
