@@ -1,8 +1,7 @@
 import time
 import sys
+import os
 
-# --- THE DATA ---
-# This is where you will write your rooms and exits.
 rooms = {
     "hallway": {
         "name": "The Hallway",
@@ -24,8 +23,6 @@ rooms = {
     }
 }
 
-# This dictionary stores the memories. 
-# As you look at an object repeatedly, the game reads the next sentence in the list.
 items = {
     "coat": [
         "Their coat is still on the hook. You keep expecting them to walk in and grab it.",
@@ -44,77 +41,81 @@ items = {
     ]
 }
 
-# This tracks how many times you've looked at an item
-item_progress = {item: 0 for item in items}
-current_room = "hallway"
+class Game:
+    def __init__(self):
+        self.room = "hallway"
+        self.prog = {k: 0 for k in items}
+        self.fast = os.environ.get("FAST") == "1"
 
-# --- THE GAME ENGINE ---
-def type_text(text):
-    """Prints text slowly for a dramatic, storytelling effect."""
-    for char in text:
-        sys.stdout.write(char)
-        sys.stdout.flush()
-        time.sleep(0.02)
-    print("\n")
-
-def play():
-    global current_room
-    
-    print("\n" + "="*50)
-    type_text("Welcome to the Memory House.")
-    type_text("Type 'look [object]' to inspect memories, 'go [room]' to move, or 'quit' to leave.")
-    print("="*50 + "\n")
-    
-    # Show the first room description
-    type_text(rooms[current_room]["name"].upper())
-    type_text(rooms[current_room]["description"])
-    
-    # The main game loop
-    while True:
-        command = input("\n> ").lower().strip().split(" ", 1)
-        action = command[0]
-        
-        if action == "quit":
-            type_text("Some memories are meant to be left for another day. Goodbye.")
-            break
+    def say(self, text):
+        if self.fast:
+            print(text + "\n")
+            return
             
-        elif action == "go":
-            if len(command) < 2:
-                print("Go where? (e.g., 'go kitchen')")
-                continue
-                
-            destination = command[1]
-            if destination in rooms[current_room]["exits"]:
-                current_room = destination
-                print("\n" + "-"*30)
-                type_text(rooms[current_room]["name"].upper())
-                type_text(rooms[current_room]["description"])
-            else:
-                print(f"You can't go to the '{destination}' from here.")
-                
-        elif action == "look":
-            if len(command) < 2:
-                print("Look at what? (e.g., 'look mug')")
-                continue
-                
-            target = command[1]
-            if target in rooms[current_room]["items"]:
-                # Get how many times we've looked at this item
-                progress = item_progress[target]
-                descriptions = items[target]
-                
-                # Print the current description
-                type_text(descriptions[progress])
-                
-                # Advance the progress, but stop at the last description (acceptance)
-                if progress < len(descriptions) - 1:
-                    item_progress[target] += 1
-            else:
-                print(f"There is no '{target}' here.")
-                
-        else:
-            print("I don't understand that command. Try 'go [room]', 'look [object]', or 'quit'.")
+        for c in text:
+            sys.stdout.write(c)
+            sys.stdout.flush()
+            time.sleep(0.02)
+        print("\n")
 
-# Start the game
+    def done(self):
+        return all(v == len(items[k]) - 1 for k, v in self.prog.items())
+
+    def play(self):
+        self.say("Welcome to the Memory House.")
+        self.say("Type 'look', 'look [object]', 'go [room]', or 'quit'.")
+        
+        self.say(rooms[self.room]["name"].upper())
+        self.say(rooms[self.room]["description"])
+        
+        try:
+            while True:
+                cmd = input("\n> ").lower().strip().split(" ", 1)
+                act = cmd[0]
+                
+                if act == "quit":
+                    self.say("Some memories are meant to be left for another day. Goodbye.")
+                    break
+                    
+                elif act == "go":
+                    if len(cmd) < 2:
+                        print("Go where?")
+                        continue
+                        
+                    dest = cmd[1]
+                    if dest in rooms[self.room]["exits"]:
+                        self.room = dest
+                        self.say(rooms[self.room]["name"].upper())
+                        self.say(rooms[self.room]["description"])
+                    else:
+                        print(f"Can't go to '{dest}'.")
+                        
+                elif act == "look":
+                    if len(cmd) < 2:
+                        self.say(rooms[self.room]["description"])
+                        continue
+                        
+                    obj = cmd[1]
+                    if obj in rooms[self.room]["items"]:
+                        p = self.prog[obj]
+                        self.say(items[obj][p])
+                        
+                        if p < len(items[obj]) - 1:
+                            self.prog[obj] += 1
+                            
+                        if self.done():
+                            print("-" * 50)
+                            self.say("The house is quiet, but it doesn't feel heavy anymore. You are ready to move on.")
+                            break
+                    else:
+                        print(f"No '{obj}' here.")
+                        
+                else:
+                    print("Unknown command. Try 'go [room]', 'look [object]', or 'quit'.")
+                    
+        except KeyboardInterrupt:
+            print("\n")
+            self.say("Goodbye.")
+
 if __name__ == "__main__":
-    play()
+    Game().play()
